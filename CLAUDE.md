@@ -31,10 +31,13 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
 - Prefer existing `omarchy` CLI commands (theme set, toggle nightlight, etc.) over reimplementing.
 
 ## Roadmap
-- Done (v0.2): Mouse & Touchpad, Keyboard, Display (brightness, scale, text size, scroll zoom,
+- Done (v0.2): Mouse & Touchpad, Keyboard, Display (brightness, scale, text size, Super+pinch zoom,
   night light), Appearance, Windows (incl. float-all rule, focus), Date & Time, Idle & Lock,
   Power (AC/battery profiles), Notifications (DND), Default Apps, About, search.
 - Command-backed settings live in plugin/helper.sh (`get` / `lists` / `set KEY VAL`); test it
   directly with `bash plugin/helper.sh get | jq`.
 - Next: external monitor resolution/arrangement, night light warmth, Wi-Fi/Bluetooth links.
 - Later, separate plugin: macOS-style Alt+Tab switcher.
+- Touchpad gotcha: two-finger scrolling never triggers mouse_up/mouse_down key binds on
+  this touchpad (Omarchy's own Super+scroll doesn't either). Use hl.gesture (pinch, or 3+
+  finger swipes) for touchpad features instead.

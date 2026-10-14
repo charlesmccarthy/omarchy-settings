@@ -185,21 +185,12 @@ var pages = [
       {
         title: "Zoom",
         items: [
-          { key: "bind.scroll_zoom", type: "toggle", reload: true, label: "Zoom with Super + Ctrl + scroll",
-            description: "Magnify around the pointer, like macOS. Super + Ctrl + Alt + Z resets",
+          { key: "gesture.pinch_zoom", type: "toggle", reload: true, label: "Zoom with Super + pinch",
+            description: "Hold Super and spread two fingers to magnify around the pointer. Super + Ctrl + Alt + Z resets",
+            // Touchpads report two-finger movement as scrolling, which key
+            // bindings never see; a pinch is a real gesture, so use that.
             snippet: function(v) {
-              if (!v) return ""
-              return [
-                // A touchpad swipe sends dozens of scroll events, so each one
-                // only nudges the zoom by a few percent.
-                'local function omarchy_settings_zoom(factor)',
-                '  local zoom = (hl.get_config("cursor.zoom_factor") or 1) * factor',
-                '  if zoom < 1.02 then zoom = 1 end',
-                '  hl.config({ cursor = { zoom_factor = math.min(zoom, 6) } })',
-                'end',
-                'o.bind("SUPER + CTRL + mouse_up", "Zoom in", function() omarchy_settings_zoom(1.03) end)',
-                'o.bind("SUPER + CTRL + mouse_down", "Zoom out", function() omarchy_settings_zoom(1 / 1.03) end)'
-              ].join("\n")
+              return v ? 'hl.gesture({ fingers = 2, direction = "pinch", action = "cursorZoom", mods = "SUPER", zoom_level = 1, mode = "live" })' : ""
             } }
         ]
       },

@@ -237,9 +237,15 @@ Item {
 
   function loadState(text) {
     var match = String(text).match(/^-- state: (.*)$/m)
-    if (match) {
-      try { overrides = JSON.parse(match[1]) } catch (e) { overrides = {} }
-    }
+    if (!match) return
+    var parsed = {}
+    try { parsed = JSON.parse(match[1]) } catch (e) {}
+    // Drop non-config entries (gestures, binds, rules) that a newer version
+    // no longer declares, so they aren't written out as config options.
+    Object.keys(parsed).forEach(function(k) {
+      if (/^(gesture|bind|rule)\./.test(k) && !Schema.findItem(k)) delete parsed[k]
+    })
+    overrides = parsed
   }
 
   function flushLive() {

@@ -26,7 +26,7 @@ Open it with **Super + I**, the gear icon in the bar, or **Settings** in the Oma
 |---|---|
 | Mouse & Touchpad | Pointer speed, acceleration, natural scrolling (mouse and touchpad), scroll speed, tap to click, two-finger right click, ignore touchpad while typing, three-finger workspace swipe |
 | Keyboard | Repeat delay and rate, keyboard layout, Caps Lock behaviour |
-| Display | Brightness, scale, text size, scroll-to-zoom, night light |
+| Display | Brightness, scale, text size, pinch-to-zoom (Super + pinch), night light |
 | Appearance | Theme, wallpaper, bar position, font, terminal font size, gaps, borders, rounded corners, blur, animations |
 | Windows | Tiling or scrolling layout, window width when scrolling, float new windows, focus follows mouse, resize by dragging edges |
 | Date & Time | 12/24-hour clock, weekday, time zone, automatic time |
