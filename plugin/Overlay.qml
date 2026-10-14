@@ -68,6 +68,8 @@ Item {
     if (eq < 0 || !item) return "unknown setting"
     var text = String(arg).slice(eq + 1)
     var v = item.type === "slider" ? Number(text) : item.type === "toggle" ? text === "true" : text
+    // Choices may have numeric values; match the option so the type survives.
+    settingsStore.options(item).forEach(function(o) { if (String(o.value) === text) v = o.value })
     settingsStore.set(item, v, true)
     return "ok"
   }
