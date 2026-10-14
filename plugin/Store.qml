@@ -242,10 +242,13 @@ Item {
     try { parsed = JSON.parse(match[1]) } catch (e) {}
     // Drop non-config entries (gestures, binds, rules) that a newer version
     // no longer declares, so they aren't written out as config options.
+    var dropped = false
     Object.keys(parsed).forEach(function(k) {
-      if (/^(gesture|bind|rule)\./.test(k) && !Schema.findItem(k)) delete parsed[k]
+      if (/^(gesture|bind|rule)\./.test(k) && !Schema.findItem(k)) { delete parsed[k]; dropped = true }
     })
     overrides = parsed
+    // Rewrite the file so the dropped snippets stop loading.
+    if (dropped) { _needsReload = true; persistTimer.restart() }
   }
 
   function flushLive() {

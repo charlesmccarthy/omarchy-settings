@@ -37,11 +37,9 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
 - Command-backed settings live in plugin/helper.sh (`get` / `lists` / `set KEY VAL`); test it
   directly with `bash plugin/helper.sh get | jq`.
 - Next: external monitor resolution/arrangement, night light warmth, Wi-Fi/Bluetooth links.
-- Alt+Tab switcher: switcher/ (plugin id omarchy-switcher, overlay). Settings' Windows →
-  Window switcher toggle writes the binds (ALT+TAB next, ALT+SHIFT+TAB prev, ALT+ALT_L
-  release → commit) calling switcher/switcher.sh, which uses `omarchy-shell shell call`.
-  Previews via ScreencopyView on Hyprland.toplevels[].wayland. Test: `switcher.sh next`, then
-  `switcher.sh commit`.
+- Alt+Tab switcher moved to its own repo, ~/code/omarchy-switcher. Settings' Windows → Window
+  switcher toggle is cmd-backed (helper.sh `windows.switcher`) and calls its switcher.sh
+  enable/disable/status.
 - Touchpad gotcha: two-finger scrolling never triggers mouse_up/mouse_down key binds on
   this touchpad (Omarchy's own Super+scroll doesn't either). Use hl.gesture (pinch, or 3+
   finger swipes) for touchpad features instead.

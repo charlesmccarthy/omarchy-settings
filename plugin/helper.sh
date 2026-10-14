@@ -7,6 +7,7 @@
 #   helper.sh set KEY VAL   apply one setting
 
 SHELL_JSON="$HOME/.config/omarchy/shell.json"
+SWITCHER="$HOME/.config/omarchy/plugins/omarchy-switcher/switcher.sh"
 POWER_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/powerprofiles"
 
 # ---- terminal font size (whichever terminal is the default) ----------------
@@ -167,6 +168,7 @@ cmd_get() {
     --arg editor "$(omarchy-default-editor 2>/dev/null)" \
     --arg agent "$(omarchy-default-agent 2>/dev/null)" \
     --arg dnd "$(omarchy-shell notifications isDnd 2>/dev/null)" \
+    --arg switcher "$([[ -x $SWITCHER ]] && "$SWITCHER" status)" \
     '{
       "display.brightness": (if $brightness == "" then null else ($brightness | tonumber) end),
       "display.scale": ($monitor.scale // 1),
@@ -195,7 +197,8 @@ cmd_get() {
       "defaults.terminal": $terminal,
       "defaults.editor": $editor,
       "defaults.agent": $agent,
-      "notifications.dnd": ($dnd == "on")
+      "notifications.dnd": ($dnd == "on"),
+      "windows.switcher": ($switcher == "enabled")
     }' | jq -s '.[0] * .[1]' - <(about_json)
 }
 
@@ -270,6 +273,13 @@ cmd_set() {
     defaults.editor) omarchy-default-editor "$value" >/dev/null ;;
     defaults.agent) omarchy-default-agent "$value" >/dev/null ;;
     notifications.dnd) omarchy-shell notifications setDnd "$value" >/dev/null ;;
+    windows.switcher)
+      if [[ ! -x $SWITCHER ]]; then
+        echo "Install omarchy-switcher first: github.com/charlesmccarthy/omarchy-switcher" >&2
+        return 1
+      fi
+      if [[ $value == "true" ]]; then "$SWITCHER" enable; else "$SWITCHER" disable; fi
+      hyprctl reload >/dev/null ;;
     *) echo "unknown setting: $key" >&2; return 1 ;;
   esac
 }

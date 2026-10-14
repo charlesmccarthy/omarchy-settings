@@ -21,15 +21,6 @@ rm -rf "${PLUGIN_DIR:?}"/*
 cp -r "$SRC"/. "$PLUGIN_DIR"/
 omarchy-plugin-validate "$PLUGIN_DIR"
 
-# The Alt+Tab window switcher is a separate overlay plugin; Settings turns its
-# key bindings on and off (Windows → Switching).
-SWITCHER_DIR="$HOME/.config/omarchy/plugins/omarchy-switcher"
-echo "Copying window switcher to $SWITCHER_DIR"
-mkdir -p "$SWITCHER_DIR"
-rm -rf "${SWITCHER_DIR:?}"/*
-cp -r "$(dirname "$SRC")/switcher"/. "$SWITCHER_DIR"/
-omarchy-plugin-validate "$SWITCHER_DIR"
-
 if ! grep -qF 'hypr.settings")' "$HYPRLAND"; then
   echo "Loading ~/.config/hypr/settings.lua from hyprland.lua"
   backup "$HYPRLAND"
@@ -57,9 +48,8 @@ fi
 
 echo "Enabling plugin and adding the bar icon"
 omarchy-shell shell rescanPlugins >/dev/null
-for _ in {1..20}; do omarchy-shell shell listPlugins 2>/dev/null | grep -q '"omarchy-switcher"' && break; sleep 0.25; done
+for _ in {1..20}; do omarchy-shell shell listPlugins 2>/dev/null | grep -q "\"$ID\"" && break; sleep 0.25; done
 omarchy plugin enable "$ID" --section right >/dev/null
-omarchy plugin enable omarchy-switcher >/dev/null
 
 hyprctl reload >/dev/null
 errors=$(hyprctl configerrors)

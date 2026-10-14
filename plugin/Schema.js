@@ -295,21 +295,8 @@ var pages = [
       {
         title: "Switching",
         items: [
-          { key: "bind.alt_tab_switcher", type: "toggle", reload: true, label: "Window switcher",
-            description: "Hold Alt and tap Tab to pick a window from live previews, like macOS and Windows",
-            snippet: function(v) {
-              if (!v) return ""
-              var cmd = function(step) {
-                return "'\"$HOME/.config/omarchy/plugins/omarchy-switcher/switcher.sh\" " + step + "'"
-              }
-              return [
-                'hl.unbind("ALT + TAB")',
-                'hl.unbind("ALT + SHIFT + TAB")',
-                'o.bind("ALT + TAB", "Switch windows", ' + cmd("next") + ')',
-                'o.bind("ALT + SHIFT + TAB", "Switch windows backwards", ' + cmd("prev") + ')',
-                'o.bind("ALT + ALT_L", "Finish switching windows", ' + cmd("commit") + ', { release = true })'
-              ].join("\n")
-            } }
+          { key: "windows.switcher", backend: "cmd", type: "toggle", label: "Window switcher",
+            description: "Hold Alt and tap Tab to pick from live window previews. Needs the omarchy-switcher plugin" }
         ]
       },
       {
