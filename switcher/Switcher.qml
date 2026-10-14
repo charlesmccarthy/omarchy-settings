@@ -267,7 +267,9 @@ Item {
             ScreencopyView {
               id: shot
               anchors.fill: parent
-              captureSource: root.shown ? root.toplevelFor(tile.modelData.address) : null
+              // Hold the capture until the fade-out ends, or the icon fallback
+              // flashes up as the overlay disappears.
+              captureSource: panel.visible ? root.toplevelFor(tile.modelData.address) : null
               live: false
               constraintSize: Qt.size(width, height)
             }
