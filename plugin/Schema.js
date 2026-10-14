@@ -276,8 +276,20 @@ var pages = [
             min: 0.3, max: 1, step: 0.05,
             format: function(v) { return Math.round(v * 100) + "%" } },
           { key: "rule.float_all", type: "toggle", reload: true, label: "Float new windows",
-            description: "Open windows floating and overlapping, like macOS. Super + T tiles one again",
-            snippet: function(v) { return v ? 'o.window(".*", { float = true, center = true })' : "" } }
+            description: "Open windows floating and overlapping, like macOS. Works best with Focus set to On click. Super + T tiles one again",
+            snippet: function(v) {
+              if (!v) return ""
+              return [
+                'o.window(".*", { float = true, center = true })',
+                // Omarchy forces Chromium-based browsers to tile; let them float too.
+                'o.window({ tag = "chromium-based-browser" }, { tile = false, float = true })',
+                // Like macOS, bring a floating window to the front when it gets focus.
+                'hl.on("window.active", function()',
+                '  local w = hl.get_active_window()',
+                '  if w and w.floating then hl.dispatch(hl.dsp.window.bring_to_top()) end',
+                'end)'
+              ].join("\n")
+            } }
         ]
       },
       {
