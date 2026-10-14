@@ -5,7 +5,7 @@ Settings. Pointer speed, natural scrolling, key repeat, brightness, themes, font
 layout, clock format, idle timers, power modes, default apps and more, all in one
 searchable window. Changes apply instantly.
 
-![Mouse & Touchpad](screenshots/mouse.png)
+![Omarchy Settings demo](screenshots/demo.gif)
 
 It's an Omarchy shell plugin, built from the same components as Omarchy's own clipboard
 manager and bar panels, so it follows your theme, font and corner style. It opens
