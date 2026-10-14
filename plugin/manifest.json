@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "omarchy-settings",
+  "name": "Settings",
+  "version": "0.1.0",
+  "author": "charlesmccarthy",
+  "license": "MIT",
+  "description": "A native settings app for Omarchy: mouse, touchpad, keyboard, windows and more",
+  "kinds": ["overlay", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "Overlay.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Settings",
+    "description": "Opens the Settings app",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
