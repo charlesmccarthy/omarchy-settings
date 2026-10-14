@@ -15,6 +15,8 @@ CursorSurface {
 
   readonly property var value: store ? store.value(item.key, undefined) : undefined
   readonly property bool overridden: store && store.overrides && store.isOverridden(item)
+  readonly property bool busy: store && store.busy[item.key] === true
+  readonly property var options: store ? store.options(item) : []
   readonly property bool popupOpen: control.item && control.item.popupOpen === true
   readonly property int controlWidth: Style.space(300)
 
@@ -23,6 +25,7 @@ CursorSurface {
 
   signal pointerEntered()
   signal popupClosed()
+  signal closeRequested()
 
   // Lets the slider knob and border match the menu surface, not the bar.
   QtObject {
@@ -39,21 +42,36 @@ CursorSurface {
       if ((direction > 0) !== (value === true)) store.set(item, direction > 0, true)
     } else if (item.type === "choice") {
       var idx = optionIndex()
-      var next = Math.max(0, Math.min(item.options.length - 1, idx + direction))
-      if (next !== idx) store.set(item, item.options[next].value, true)
+      var next = Math.max(0, Math.min(options.length - 1, idx + direction))
+      if (next !== idx) store.set(item, options[next].value, true)
     }
   }
 
   function activate() {
-    if (!store || value === undefined) return
+    if (!store) return
+    if (item.type === "action") { runAction(item.actions[0]); return }
+    if (value === undefined) return
     if (item.type === "toggle") store.set(item, !value, true)
-    else if (item.type === "choice") store.set(item, item.options[(optionIndex() + 1) % item.options.length].value, true)
+    else if (item.type === "choice") store.set(item, options[(optionIndex() + 1) % options.length].value, true)
     else if (item.type === "dropdown" && control.item) control.item.open()
   }
 
+  function runAction(action) {
+    if (action.closes) row.closeRequested()
+    store.run(action.key)
+  }
+
   function optionIndex() {
-    for (var i = 0; i < item.options.length; i++) if (item.options[i].value === value) return i
+    for (var i = 0; i < options.length; i++) if (String(options[i].value) === String(value)) return i
     return 0
+  }
+
+  // ButtonGroup and dropdowns speak strings; hand the store the typed value.
+  function chooseString(v) {
+    for (var i = 0; i < options.length; i++) {
+      if (String(options[i].value) === v) { store.set(item, options[i].value, true); return }
+    }
+    store.set(item, v, true)
   }
 
   // Click anywhere on a toggle row flips it, like the kit's Toggle.
@@ -132,12 +150,16 @@ CursorSurface {
     anchors.rightMargin: Style.spacing.rowPaddingX
     anchors.verticalCenter: parent.verticalCenter
     width: row.item.type === "toggle" ? implicitWidth : row.controlWidth
+    opacity: row.busy ? 0.5 : 1
+    Behavior on opacity { NumberAnimation { duration: 120 } }
     sourceComponent: {
       switch (row.item.type) {
         case "slider": return sliderControl
         case "toggle": return toggleControl
         case "choice": return choiceControl
         case "dropdown": return dropdownControl
+        case "info": return infoControl
+        case "action": return actionControl
       }
       return null
     }
@@ -203,13 +225,13 @@ CursorSurface {
         id: group
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        options: row.item.options
+        options: row.options
         value: row.value !== undefined ? String(row.value) : ""
         focusable: false
         foreground: row.foreground
         background: row.background
         fontFamily: row.fontFamily
-        onChanged: function(v) { row.store.set(row.item, v, true) }
+        onChanged: function(v) { row.chooseString(v) }
       }
     }
   }
@@ -219,12 +241,66 @@ CursorSurface {
 
     SearchableDropdown {
       showLabel: false
-      options: row.store[row.item.source] || []
+      options: row.options
       value: row.value !== undefined ? String(row.value) : ""
       fontFamily: row.fontFamily
-      placeholderText: "Search layouts…"
-      onChanged: function(v) { row.store.set(row.item, v, true) }
+      placeholderText: "Search…"
+      onChanged: function(v) { row.chooseString(v) }
       onPopupOpenChanged: if (!popupOpen) row.popupClosed()
+    }
+  }
+
+  Component {
+    id: infoControl
+
+    Text {
+      textFormat: Text.PlainText
+      horizontalAlignment: Text.AlignRight
+      text: row.value !== undefined && row.value !== null ? String(row.value) : "—"
+      color: row.foreground
+      opacity: 0.8
+      font.family: row.fontFamily
+      font.pixelSize: Style.font.body
+      elide: Text.ElideLeft
+    }
+  }
+
+  Component {
+    id: actionControl
+
+    Item {
+      implicitHeight: buttons.implicitHeight
+
+      Row {
+        id: buttons
+        anchors.right: parent.right
+        spacing: Style.spacing.md
+
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          visible: typeof row.value === "string" && row.value !== ""
+          textFormat: Text.PlainText
+          text: visible ? row.value : ""
+          color: row.foreground
+          opacity: 0.7
+          font.family: row.fontFamily
+          font.pixelSize: Style.font.body
+          rightPadding: Style.spacing.sm
+        }
+
+        Repeater {
+          model: row.item.actions
+
+          Button {
+            required property var modelData
+            text: modelData.label
+            bordered: true
+            foreground: row.foreground
+            fontFamily: row.fontFamily
+            onClicked: row.runAction(modelData)
+          }
+        }
+      }
     }
   }
 }

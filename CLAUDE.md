@@ -31,9 +31,10 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
 - Prefer existing `omarchy` CLI commands (theme set, toggle nightlight, etc.) over reimplementing.
 
 ## Roadmap
-- Done (v0.1): Mouse & Touchpad, Keyboard, Windows (layout, scrolling width, edge resize).
-- Next: Display (scale, resolution, night light, text size), Appearance (theme, background,
-  font, gaps, borders, rounding), Date & Time (12/24h clock via `omarchy bar set omarchy.clock
-  format`), Idle & Lock (shell.json idle block — no merging, preserve the rest), float new
-  windows by default, search across settings.
+- Done (v0.2): Mouse & Touchpad, Keyboard, Display (brightness, scale, text size, scroll zoom,
+  night light), Appearance, Windows (incl. float-all rule, focus), Date & Time, Idle & Lock,
+  Power (AC/battery profiles), Notifications (DND), Default Apps, About, search.
+- Command-backed settings live in plugin/helper.sh (`get` / `lists` / `set KEY VAL`); test it
+  directly with `bash plugin/helper.sh get | jq`.
+- Next: external monitor resolution/arrangement, night light warmth, Wi-Fi/Bluetooth links.
 - Later, separate plugin: macOS-style Alt+Tab switcher.

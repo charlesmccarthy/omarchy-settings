@@ -6,8 +6,8 @@ import qs.Ui
 import "Schema.js" as Schema
 
 // Centered settings window, built like the first-party clipboard overlay.
-// Keys: ↑/↓ move, ←/→ adjust, Enter/Space toggle, Tab switches between the
-// page list and the page, 1–9 jump to a page, Esc closes.
+// Keys: type to search, ↑/↓ move, ←/→ adjust, Enter/Space toggle or open,
+// Tab switches between the page list and the page, Delete resets, Esc closes.
 Item {
   id: root
 
@@ -18,10 +18,11 @@ Item {
   property int pageIndex: 0
   property string pane: "content"
   property int cursor: 0
+  property string query: ""
   property var rowItems: ({})
 
   readonly property var pages: Schema.pages
-  readonly property var page: pages[pageIndex]
+  readonly property var page: query.trim() !== "" ? Schema.searchPage(query) : pages[pageIndex]
   readonly property var pageItems: {
     var out = []
     for (var s = 0; s < page.sections.length; s++) out = out.concat(page.sections[s].items)
@@ -36,8 +37,8 @@ Item {
   readonly property int cornerRadius: Style.cornerRadius
   property string fontFamily: Style.font.menuFamily
   property int contentMargin: Style.spacing.panelPadding
-  property int cardWidth: Math.min(Style.space(940), panel.width - Style.gapsOut * 2)
-  property int cardHeight: Math.min(Style.space(640), panel.height - Style.gapsOut * 2)
+  property int cardWidth: Math.min(Style.space(960), panel.width - Style.gapsOut * 2)
+  property int cardHeight: Math.min(Style.space(680), panel.height - Style.gapsOut * 2)
   property int sidebarWidth: Style.space(230)
 
   function open(payloadJson) {
@@ -46,6 +47,7 @@ Item {
     if (payload.page) {
       for (var i = 0; i < pages.length; i++) if (pages[i].id === payload.page) root.pageIndex = i
     }
+    root.query = payload.search ? String(payload.search) : ""
     root.pane = "content"
     root.cursor = 0
     root.opened = true
@@ -94,18 +96,28 @@ Item {
 
   function showPage(index) {
     if (index < 0 || index >= pages.length) return
-    if (index !== root.pageIndex) {
+    if (index !== root.pageIndex || root.query !== "") {
+      root.query = ""
       root.pageIndex = index
       root.cursor = 0
       flick.contentY = 0
     }
   }
 
+  function setQuery(text) {
+    root.query = text
+    root.pane = "content"
+    root.cursor = 0
+    flick.contentY = 0
+  }
+
   function moveCursor(delta) {
     if (root.pane === "sidebar") {
-      root.showPage((root.pageIndex + delta + pages.length) % pages.length)
+      var from = root.query !== "" ? (delta > 0 ? -1 : 0) : root.pageIndex
+      root.showPage((from + delta + pages.length) % pages.length)
       return
     }
+    if (!root.pageItems.length) return
     root.cursor = Math.max(0, Math.min(root.pageItems.length - 1, root.cursor + delta))
     root.ensureVisible(root.cursor)
   }
@@ -126,41 +138,56 @@ Item {
 
   function handleKey(event) {
     var k = event.key
-    var mods = event.modifiers
-    if (k === Qt.Key_Escape) { root.dismiss(); return true }
+    if (k === Qt.Key_Escape) {
+      if (root.query !== "") root.setQuery("")
+      else root.dismiss()
+      return true
+    }
     if (k === Qt.Key_Tab || k === Qt.Key_Backtab) {
       root.pane = root.pane === "sidebar" ? "content" : "sidebar"
       return true
     }
-    if (k >= Qt.Key_1 && k <= Qt.Key_9 && !(mods & Qt.ControlModifier)) {
-      root.showPage(k - Qt.Key_1)
+    if (k === Qt.Key_Up) { root.moveCursor(-1); return true }
+    if (k === Qt.Key_Down) { root.moveCursor(1); return true }
+    if (k === Qt.Key_PageUp) { root.moveCursor(-5); return true }
+    if (k === Qt.Key_PageDown) { root.moveCursor(5); return true }
+
+    if (Util.editsFilter(event, root.query)) {
+      root.setQuery(Util.editedFilter(event, root.query))
       return true
     }
-    if (k === Qt.Key_Up || k === Qt.Key_K) { root.moveCursor(-1); return true }
-    if (k === Qt.Key_Down || k === Qt.Key_J) { root.moveCursor(1); return true }
-    if (k === Qt.Key_Home) { root.moveCursor(-1000); return true }
-    if (k === Qt.Key_End) { root.moveCursor(1000); return true }
+
+    var row = root.pane === "content" ? root.currentRow() : null
+    if (k === Qt.Key_Delete) {
+      if (row && row.overridden) settingsStore.reset(row.item)
+      return true
+    }
+    if (k === Qt.Key_Space && root.query !== "" && !row) return false
 
     if (root.pane === "sidebar") {
-      if (k === Qt.Key_Right || k === Qt.Key_L || k === Qt.Key_Return || k === Qt.Key_Enter) {
+      if (k === Qt.Key_Right || k === Qt.Key_Return || k === Qt.Key_Enter) {
         root.pane = "content"
         return true
       }
-      return false
+    } else if (row) {
+      var adjustable = row.item.type === "slider" || row.item.type === "choice"
+      if (k === Qt.Key_Left) {
+        if (adjustable) row.adjust(-1)
+        else root.pane = "sidebar"
+        return true
+      }
+      if (k === Qt.Key_Right) { row.adjust(1); return true }
+      if (k === Qt.Key_Return || k === Qt.Key_Enter || (k === Qt.Key_Space && root.query === "")) {
+        row.activate()
+        return true
+      }
     }
 
-    var row = root.currentRow()
-    if (!row) return false
-    var adjustable = row.item.type === "slider" || row.item.type === "choice"
-    if (k === Qt.Key_Left || k === Qt.Key_H) {
-      if (adjustable) row.adjust(-1)
-      else root.pane = "sidebar"
-      return true
-    }
-    if (k === Qt.Key_Right || k === Qt.Key_L) { row.adjust(1); return true }
-    if (k === Qt.Key_Return || k === Qt.Key_Enter || k === Qt.Key_Space) { row.activate(); return true }
-    if (k === Qt.Key_Backspace || k === Qt.Key_Delete) {
-      if (row.overridden) settingsStore.reset(row.item)
+    var ch = event.text
+    if (ch && ch.length === 1 && ch.charCodeAt(0) >= 32 && ch.charCodeAt(0) !== 127
+        && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+      if (ch === " " && root.query === "") return false
+      root.setQuery(root.query + ch)
       return true
     }
     return false
@@ -235,7 +262,7 @@ Item {
           Row {
             spacing: Style.spacing.lg
             leftPadding: Style.spacing.rowPaddingX
-            bottomPadding: Style.spacing.xxl
+            bottomPadding: Style.spacing.lg
             height: Style.space(40) + bottomPadding
 
             Text {
@@ -259,6 +286,47 @@ Item {
             }
           }
 
+          BorderSurface {
+            id: searchBox
+            width: sidebar.width
+            height: Math.max(Style.space(34), Style.font.body + Style.spacing.controlPaddingY * 2 + Style.spacing.sm)
+            radius: Style.cornerRadius
+            color: Style.normalFillFor(root.foreground, Color.accent)
+            borderSpec: Border.controlSpec(root.query !== "" ? "focus" : "normal", root.foreground, Color.accent)
+
+            Row {
+              anchors.left: parent.left
+              anchors.leftMargin: Style.spacing.rowPaddingX
+              anchors.right: parent.right
+              anchors.rightMargin: Style.spacing.rowPaddingX
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.spacing.lg
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: String.fromCodePoint(0xF0349)
+                color: root.foreground
+                opacity: 0.6
+                font.family: Style.font.family
+                font.pixelSize: Style.font.icon
+              }
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - Style.space(30)
+                textFormat: Text.PlainText
+                text: root.query !== "" ? root.query : "Search settings"
+                color: root.foreground
+                opacity: root.query !== "" ? 1 : 0.5
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.body
+                elide: Text.ElideLeft
+              }
+            }
+          }
+
+          Item { width: 1; height: Style.spacing.md }
+
           Repeater {
             model: root.pages
 
@@ -270,8 +338,8 @@ Item {
               width: sidebar.width
               height: Math.max(Style.space(40), Style.font.title + Style.spacing.xxl * 2)
               foreground: root.foreground
-              current: index === root.pageIndex
-              hasCursor: root.pane === "sidebar" && index === root.pageIndex
+              current: root.query === "" && index === root.pageIndex
+              hasCursor: root.pane === "sidebar" && root.query === "" && index === root.pageIndex
 
               Row {
                 anchors.left: parent.left
@@ -416,6 +484,7 @@ Item {
                       root.cursor = flatIndex
                     }
                     onPopupClosed: Qt.callLater(function() { keyCatcher.forceActiveFocus() })
+                    onCloseRequested: root.dismiss()
 
                     Component.onCompleted: root.rowItems[rowKey] = settingRow
                     Component.onDestruction: {
@@ -445,7 +514,7 @@ Item {
             elide: Text.ElideRight
             text: !settingsStore.installed ? "Not installed: changes apply now but are lost on reload. Run install.sh."
                 : settingsStore.error !== "" ? "Hyprland config error: " + settingsStore.error.split("\n")[0]
-                : "Changes apply instantly  ·  ←/→ adjust  ·  Tab switch pane  ·  Backspace reset"
+                : "Type to search  ·  ↑↓ move  ·  ←→ adjust  ·  Enter toggle  ·  Tab switch pane  ·  Del reset"
             color: (!settingsStore.installed || settingsStore.error !== "") ? Color.urgent : root.foreground
             opacity: (!settingsStore.installed || settingsStore.error !== "") ? 1 : 0.45
             font.family: root.fontFamily

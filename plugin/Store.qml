@@ -3,15 +3,20 @@ import Quickshell
 import Quickshell.Io
 import "Schema.js" as Schema
 
-// Reads live values from Hyprland, previews changes instantly with
-// `hyprctl eval`, and persists only what the user changed to a generated
-// ~/.config/hypr/settings.lua (loaded from hyprland.lua by install.sh).
+// Reads live values, previews changes instantly, and persists them.
+//
+// Hyprland settings: read with `hyprctl getoption`, previewed with
+// `hyprctl eval`, and saved (only what the user changed) to a generated
+// ~/.config/hypr/settings.lua that install.sh loads from hyprland.lua.
+//
+// Everything else goes through helper.sh, which wraps Omarchy's own commands.
 Item {
   id: store
 
   readonly property string home: Quickshell.env("HOME")
   readonly property string luaPath: home + "/.config/hypr/settings.lua"
   readonly property string hyprlandPath: home + "/.config/hypr/hyprland.lua"
+  readonly property string helperPath: Qt.resolvedUrl("helper.sh").toString().replace(/^file:\/\//, "")
 
   // key -> UI value. Reassigned (never mutated) so bindings refresh.
   property var values: ({})
@@ -19,35 +24,54 @@ Item {
   property var raw: ({})
   // Lua key -> value the user set through this app.
   property var overrides: ({})
+  // Option lists from `helper.sh lists`, plus keyboard layouts.
+  property var lists: ({})
   property bool loaded: false
   property bool installed: true
   property string error: ""
-  property var xkbLayouts: []
+  property var busy: ({})
 
   property var _pendingLive: ({})
+  property var _pendingCmd: ({})
   property bool _needsReload: false
 
   function value(key, fallback) {
     return values[key] !== undefined ? values[key] : fallback
   }
 
+  function options(item) {
+    if (item.options) return item.options
+    return lists[item.source] || []
+  }
+
   function isOverridden(item) {
+    if (item.backend === "cmd") return false
     if (item.write) return overrides[item.option] !== undefined
     return overrides[item.key] !== undefined
   }
 
+  function mergeValues(patch) {
+    values = Object.assign({}, values, patch)
+  }
+
   function refresh() {
-    var items = Schema.allItems().filter(function(i) { return !i.gesture })
-    var batch = items.map(function(i) { return "getoption " + Schema.optionName(i) }).join(";")
+    var items = Schema.allItems().filter(Schema.isHypr)
     readProc.items = items
-    readProc.command = ["hyprctl", "-j", "--batch", batch]
+    readProc.command = ["hyprctl", "-j", "--batch",
+                        items.map(function(i) { return "getoption " + Schema.optionName(i) }).join(";")]
     readProc.running = true
+    refreshCommands()
     installedProc.running = true
+  }
+
+  function refreshCommands() {
+    if (cmdReadProc.running) cmdReadProc.again = true
+    else cmdReadProc.running = true
   }
 
   function parseRaw(obj) {
     if (!obj) return undefined
-    var keys = ["float", "int", "bool", "str", "custom"]
+    var keys = ["float", "int", "bool", "str", "css", "custom"]
     for (var i = 0; i < keys.length; i++) {
       if (obj[keys[i]] === undefined) continue
       var v = obj[keys[i]]
@@ -59,20 +83,24 @@ Item {
   function applyRead(items, text) {
     var chunks = String(text).split(/\n\s*\n/).map(function(c) { return c.trim() }).filter(function(c) { return c.length })
     var nextRaw = {}
-    var nextValues = {}
+    var patch = {}
     for (var i = 0; i < items.length && i < chunks.length; i++) {
       var item = items[i]
       var rawValue
       try { rawValue = store.parseRaw(JSON.parse(chunks[i])) } catch (e) { continue }
       nextRaw[Schema.optionName(item)] = rawValue
-      nextValues[item.key] = item.read ? item.read(rawValue) : rawValue
+      patch[item.key] = item.read ? item.read(rawValue) : rawValue
     }
-    var gestures = Schema.allItems().filter(function(i) { return i.gesture })
-    for (var g = 0; g < gestures.length; g++)
-      nextValues[gestures[g].key] = store.overrides[gestures[g].key] === true
-    store.raw = nextRaw
-    store.values = nextValues
-    store.loaded = true
+    Schema.allItems().filter(function(i) { return i.snippet }).forEach(function(i) {
+      patch[i.key] = store.overrides[i.key] === true
+    })
+    raw = nextRaw
+    mergeValues(patch)
+    loaded = true
+  }
+
+  function applyCommandRead(text) {
+    try { mergeValues(JSON.parse(text)) } catch (e) { console.warn("omarchy-settings: helper get failed", e) }
   }
 
   function normalize(item, v) {
@@ -85,12 +113,21 @@ Item {
   // commit=false previews only (slider drag); commit=true also saves.
   function set(item, v, commit) {
     v = normalize(item, v)
-    var nextValues = Object.assign({}, values)
-    nextValues[item.key] = v
-    values = nextValues
+    var patch = {}
+    patch[item.key] = v
+    mergeValues(patch)
+
+    if (item.backend === "cmd") {
+      if (commit || item.live) {
+        _pendingCmd = Object.assign({}, _pendingCmd, patch)
+        if (commit) cmdTimer.restart()
+        else if (!cmdTimer.running) cmdTimer.start()
+      }
+      return
+    }
 
     var writes = {}
-    if (item.gesture) {
+    if (item.snippet) {
       writes[item.key] = v
     } else if (item.write) {
       writes = item.write(v, raw[Schema.optionName(item)])
@@ -101,7 +138,7 @@ Item {
       writes[item.key] = v
     }
 
-    if (!item.gesture) {
+    if (!item.snippet) {
       _pendingLive = Object.assign({}, _pendingLive, writes)
       if (!liveTimer.running) liveTimer.start()
     }
@@ -113,12 +150,31 @@ Item {
     }
   }
 
+  // Buttons on "action" rows: run a helper command with no value.
+  function run(key) {
+    runCommand(key, "")
+  }
+
   function reset(item) {
+    if (item.backend === "cmd") return
     var next = Object.assign({}, overrides)
     delete next[item.write ? item.option : item.key]
     overrides = next
     _needsReload = true
     persistTimer.restart()
+  }
+
+  function runCommand(key, v) {
+    var b = Object.assign({}, busy)
+    b[key] = true
+    busy = b
+    runner.createObject(store, { key: key, command: ["bash", helperPath, "set", key, String(v)] })
+  }
+
+  function flushCommands() {
+    var pending = _pendingCmd
+    _pendingCmd = {}
+    Object.keys(pending).forEach(function(k) { store.runCommand(k, pending[k]) })
   }
 
   // --- Lua generation ----------------------------------------------------
@@ -155,7 +211,10 @@ Item {
 
   function configOverrides(map) {
     var out = {}
-    Object.keys(map).forEach(function(k) { if (k.indexOf("gesture.") !== 0) out[k] = map[k] })
+    Object.keys(map).forEach(function(k) {
+      var item = Schema.findItem(k)
+      if (!item || !item.snippet) out[k] = map[k]
+    })
     return out
   }
 
@@ -168,8 +227,11 @@ Item {
     ]
     var config = configOverrides(overrides)
     if (Object.keys(config).length) lines.push("hl.config(" + luaTable(nest(config), 0) + ")")
-    if (overrides["gesture.workspace_swipe"] === true)
-      lines.push('hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })')
+    Schema.allItems().forEach(function(item) {
+      if (!item.snippet || overrides[item.key] === undefined) return
+      var snippet = item.snippet(overrides[item.key])
+      if (snippet) lines.push(snippet)
+    })
     return lines.join("\n") + "\n"
   }
 
@@ -197,7 +259,10 @@ Item {
     }
   }
 
-  Component.onCompleted: layoutsProc.running = true
+  Component.onCompleted: {
+    layoutsProc.running = true
+    listsProc.running = true
+  }
 
   FileView {
     id: stateFile
@@ -210,8 +275,33 @@ Item {
 
   // Coalesce slider drags into one eval per frame or so.
   Timer { id: liveTimer; interval: 30; onTriggered: store.flushLive() }
+  Timer { id: cmdTimer; interval: 60; onTriggered: store.flushCommands() }
   Timer { id: persistTimer; interval: 350; onTriggered: store.persist() }
   Timer { id: errorsTimer; interval: 600; onTriggered: errorsProc.running = true }
+
+  // One process per helper command; re-reads values when it finishes so the
+  // UI shows what actually took effect.
+  Component {
+    id: runner
+
+    Process {
+      id: proc
+      property string key
+      running: true
+      stderr: StdioCollector {
+        waitForEnd: true
+        onStreamFinished: if (text.trim()) store.error = text.trim().split("\n")[0]
+      }
+      onExited: function(code) {
+        var b = Object.assign({}, store.busy)
+        delete b[proc.key]
+        store.busy = b
+        if (code === 0 && store.error.indexOf(proc.key) >= 0) store.error = ""
+        store.refreshCommands()
+        proc.destroy()
+      }
+    }
+  }
 
   Process {
     id: readProc
@@ -219,6 +309,28 @@ Item {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: store.applyRead(readProc.items, text)
+    }
+  }
+
+  Process {
+    id: cmdReadProc
+    property bool again: false
+    command: ["bash", store.helperPath, "get"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: store.applyCommandRead(text)
+    }
+    onExited: if (again) { again = false; running = true }
+  }
+
+  Process {
+    id: listsProc
+    command: ["bash", store.helperPath, "lists"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        try { store.lists = Object.assign({}, store.lists, JSON.parse(text)) } catch (e) {}
+      }
     }
   }
 
@@ -250,11 +362,12 @@ Item {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
-        store.xkbLayouts = text.split("\n").filter(function(l) { return l.length }).map(function(l) {
+        var layouts = text.split("\n").filter(function(l) { return l.length }).map(function(l) {
           var tab = l.indexOf("\t")
           var code = l.slice(0, tab)
           return { value: code, label: l.slice(tab + 1) + "  (" + code + ")" }
         })
+        store.lists = Object.assign({}, store.lists, { xkbLayouts: layouts })
       }
     }
   }

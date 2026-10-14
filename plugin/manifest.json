@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "omarchy-settings",
   "name": "Settings",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "charlesmccarthy",
   "license": "MIT",
-  "description": "A native settings app for Omarchy: mouse, touchpad, keyboard, windows and more",
+  "description": "A native settings app for Omarchy, like macOS System Settings",
   "kinds": ["overlay", "bar-widget"],
   "keepLoaded": true,
   "entryPoints": {
