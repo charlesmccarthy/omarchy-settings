@@ -45,7 +45,8 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
   finger swipes) for touchpad features instead.
 - Title bars: Windows → "Title bars on floating windows" snippet loads /usr/lib/libhyprbars.so
   (AUR hyprland-plugin-hyprbars) with hl.plugin.load guarded by io.open + pcall, then configures
-  only `if hl.plugin.hyprbars` so a missing/mismatched plugin never breaks the config. Buttons
+  only `if hl.plugin.hyprbars` so a missing/mismatched plugin never breaks the config. Button
+  actions and on_double_click are SHELL commands (wrap dispatchers in `hyprctl dispatch '...'`). Buttons
   are added left to right (close, minimize → special:scratchpad, maximize); reloads don't
   duplicate them. Note hl.plugin.load does nothing from `hyprctl eval`; use
   `hyprctl plugin load` for live experiments.

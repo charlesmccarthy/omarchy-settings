@@ -299,9 +299,11 @@ var pages = [
             description: "Mac-style close, minimize (to the scratchpad, Super + S) and maximize buttons. Needs hyprland-plugin-hyprbars",
             snippet: function(v) {
               if (!v) return ""
-              var button = function(bg, fg, action) {
+              // hyprbars runs actions as shell commands, so wrap each dispatcher.
+              var dispatch = function(lua) { return "hyprctl dispatch '" + lua + "'" }
+              var button = function(bg, fg, lua) {
                 return '  hl.plugin.hyprbars.add_button({ bg_color = "' + bg + '", fg_color = "' + fg +
-                       '", size = 13, icon = "", action = ' + JSON.stringify(action) + ' })'
+                       '", size = 13, icon = "", action = ' + JSON.stringify(dispatch(lua)) + ' })'
               }
               return [
                 // Skip quietly when the plugin isn't installed or doesn't match
@@ -317,7 +319,7 @@ var pages = [
                 '    bar_height = 28, bar_text_size = 11, bar_text_font = "JetBrainsMono Nerd Font",',
                 '    bar_buttons_alignment = "left", bar_padding = 10, bar_button_padding = 8,',
                 '    bar_part_of_window = true, bar_precedence_over_border = true,',
-                '    on_double_click = "hl.dsp.window.fullscreen({ mode = \\"maximized\\" })",',
+                '    on_double_click = ' + JSON.stringify(dispatch('hl.dsp.window.fullscreen({ mode = "maximized" })')) + ',',
                 '  } } })',
                 // Left to right like macOS: close, minimize, maximize.
                 button("rgb(ff5f57)", "rgb(7a1a14)", 'hl.dsp.window.close()'),
