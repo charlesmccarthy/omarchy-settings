@@ -28,7 +28,7 @@ Open it with **Super + I**, the gear icon in the bar, or **Settings** in the Oma
 | Keyboard | Repeat delay and rate, keyboard layout, Caps Lock behaviour |
 | Display | Brightness, scale, text size, pinch-to-zoom (Super + pinch), night light |
 | Appearance | Theme, wallpaper, bar position, font, terminal font size, gaps, borders, rounded corners, blur, animations |
-| Windows | Tiling or scrolling layout, window width when scrolling, float new windows, focus follows mouse, resize by dragging edges |
+| Windows | Tiling or scrolling layout, window width when scrolling, float new windows, Alt+Tab window switcher, focus on click or hover, resize by dragging edges |
 | Date & Time | 12/24-hour clock, weekday, time zone, automatic time |
 | Idle & Lock | Screen saver, screen saver and lock timers, stay awake, Suspend in the system menu |
 | Power | Battery health, power mode when plugged in and on battery |
@@ -40,6 +40,14 @@ Open it with **Super + I**, the gear icon in the bar, or **Settings** in the Oma
   <img src="screenshots/appearance.png" width="49%">
   <img src="screenshots/search.png" width="49%">
 </p>
+
+## Window switcher
+
+Turn on **Windows → Window switcher** and Alt+Tab works like macOS and Windows: hold Alt
+and tap Tab to step through live previews of your windows, release Alt to switch. A quick
+tap jumps straight to the previous window. Shift+Tab or the arrow keys go backwards, Esc
+cancels, and clicking a preview switches to it. It's a second shell plugin
+(`switcher/`, id `omarchy-switcher`) that `install.sh` installs alongside Settings.
 
 ## Keyboard
 
@@ -91,7 +99,7 @@ omarchy-shell shell call omarchy-settings reset input.sensitivity
 ## Roadmap
 
 Monitor resolution and arrangement for external displays, night light warmth, Wi-Fi and
-Bluetooth shortcuts, and a macOS-style Alt+Tab switcher (as a separate plugin).
+Bluetooth shortcuts.
 
 ## License
 

@@ -8,7 +8,10 @@ BINDINGS="$HOME/.config/hypr/bindings.lua"
 MENU="$HOME/.config/omarchy/extensions/omarchy-menu.jsonc"
 
 omarchy plugin disable "$ID" >/dev/null 2>&1 || true
-rm -rf "$HOME/.config/omarchy/plugins/$ID"
+omarchy plugin disable omarchy-switcher >/dev/null 2>&1 || true
+rm -rf "$HOME/.config/omarchy/plugins/$ID" "$HOME/.config/omarchy/plugins/omarchy-switcher"
+# Settings may have replaced Alt+Tab with the switcher; drop its bindings.
+[[ -f $HOME/.config/hypr/settings.lua ]] && sed -i '/omarchy-switcher\/switcher.sh\|^hl.unbind("ALT + \(SHIFT + \)\?TAB")$/d' "$HOME/.config/hypr/settings.lua"
 
 sed -i '/-- omarchy-settings$/d' "$HYPRLAND"
 sed -i '/^-- Settings app (omarchy-settings)$/,+1d' "$BINDINGS"
