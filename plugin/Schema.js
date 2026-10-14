@@ -190,12 +190,15 @@ var pages = [
             snippet: function(v) {
               if (!v) return ""
               return [
-                'local function omarchy_settings_zoom(delta)',
-                '  local zoom = (hl.get_config("cursor.zoom_factor") or 1) + delta',
-                '  hl.config({ cursor = { zoom_factor = math.max(1, math.min(zoom, 8)) } })',
+                // A touchpad swipe sends dozens of scroll events, so each one
+                // only nudges the zoom by a few percent.
+                'local function omarchy_settings_zoom(factor)',
+                '  local zoom = (hl.get_config("cursor.zoom_factor") or 1) * factor',
+                '  if zoom < 1.02 then zoom = 1 end',
+                '  hl.config({ cursor = { zoom_factor = math.min(zoom, 6) } })',
                 'end',
-                'o.bind("SUPER + CTRL + mouse_up", "Zoom in", function() omarchy_settings_zoom(0.25) end)',
-                'o.bind("SUPER + CTRL + mouse_down", "Zoom out", function() omarchy_settings_zoom(-0.25) end)'
+                'o.bind("SUPER + CTRL + mouse_up", "Zoom in", function() omarchy_settings_zoom(1.03) end)',
+                'o.bind("SUPER + CTRL + mouse_down", "Zoom out", function() omarchy_settings_zoom(1 / 1.03) end)'
               ].join("\n")
             } }
         ]
