@@ -28,7 +28,7 @@ Open it with **Super + I**, the gear icon in the bar, or **Settings** in the Oma
 | Keyboard | Repeat delay and rate, keyboard layout, Caps Lock behaviour |
 | Display | Brightness, scale, text size, pinch-to-zoom (Super + pinch), night light |
 | Appearance | Theme, wallpaper, bar position, font, terminal font size, gaps, borders, rounded corners, blur, animations |
-| Windows | Tiling or scrolling layout, window width when scrolling, float new windows, Alt+Tab window switcher (needs omarchy-switcher), focus on click or hover, resize by dragging edges |
+| Windows | Tiling or scrolling layout, window width when scrolling, float new windows, Mac-style title bars on floating windows (needs `hyprland-plugin-hyprbars`), Alt+Tab window switcher (needs omarchy-switcher), focus on click or hover, resize by dragging edges |
 | Date & Time | 12/24-hour clock, weekday, time zone, automatic time |
 | Idle & Lock | Screen saver, screen saver and lock timers, stay awake, Suspend in the system menu |
 | Power | Battery health, power mode when plugged in and on battery |

@@ -293,6 +293,43 @@ var pages = [
         ]
       },
       {
+        title: "Title bars",
+        items: [
+          { key: "plugin.title_bars", type: "toggle", reload: true, label: "Title bars on floating windows",
+            description: "Mac-style close, minimize (to the scratchpad, Super + S) and maximize buttons. Needs hyprland-plugin-hyprbars",
+            snippet: function(v) {
+              if (!v) return ""
+              var button = function(bg, fg, action) {
+                return '  hl.plugin.hyprbars.add_button({ bg_color = "' + bg + '", fg_color = "' + fg +
+                       '", size = 13, icon = "", action = ' + JSON.stringify(action) + ' })'
+              }
+              return [
+                // Skip quietly when the plugin isn't installed or doesn't match
+                // this Hyprland version, rather than breaking the config.
+                'local hyprbars = "/usr/lib/libhyprbars.so"',
+                'local hyprbars_file = io.open(hyprbars)',
+                'if hyprbars_file then',
+                '  hyprbars_file:close()',
+                '  pcall(hl.plugin.load, hyprbars)',
+                'end',
+                'if hl.plugin.hyprbars then',
+                '  hl.config({ plugin = { hyprbars = {',
+                '    bar_height = 28, bar_text_size = 11, bar_text_font = "JetBrainsMono Nerd Font",',
+                '    bar_buttons_alignment = "left", bar_padding = 10, bar_button_padding = 8,',
+                '    bar_part_of_window = true, bar_precedence_over_border = true,',
+                '    on_double_click = "hl.dsp.window.fullscreen({ mode = \\"maximized\\" })",',
+                '  } } })',
+                // Left to right like macOS: close, minimize, maximize.
+                button("rgb(ff5f57)", "rgb(7a1a14)", 'hl.dsp.window.close()'),
+                button("rgb(febc2e)", "rgb(8a5a00)", 'hl.dsp.window.move({ workspace = "special:scratchpad", follow = false })'),
+                button("rgb(28c840)", "rgb(0b5c1c)", 'hl.dsp.window.fullscreen({ mode = "maximized" })'),
+                '  o.window({ float = false }, { ["hyprbars:no_bar"] = true })',
+                'end'
+              ].join("\n")
+            } }
+        ]
+      },
+      {
         title: "Switching",
         items: [
           { key: "windows.switcher", backend: "cmd", type: "toggle", label: "Window switcher",

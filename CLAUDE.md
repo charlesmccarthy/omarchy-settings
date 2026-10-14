@@ -43,3 +43,9 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
 - Touchpad gotcha: two-finger scrolling never triggers mouse_up/mouse_down key binds on
   this touchpad (Omarchy's own Super+scroll doesn't either). Use hl.gesture (pinch, or 3+
   finger swipes) for touchpad features instead.
+- Title bars: Windows → "Title bars on floating windows" snippet loads /usr/lib/libhyprbars.so
+  (AUR hyprland-plugin-hyprbars) with hl.plugin.load guarded by io.open + pcall, then configures
+  only `if hl.plugin.hyprbars` so a missing/mismatched plugin never breaks the config. Buttons
+  are added left to right (close, minimize → special:scratchpad, maximize); reloads don't
+  duplicate them. Note hl.plugin.load does nothing from `hyprctl eval`; use
+  `hyprctl plugin load` for live experiments.
