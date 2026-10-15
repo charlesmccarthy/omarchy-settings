@@ -50,3 +50,6 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
   are added left to right (close, minimize → special:scratchpad, maximize); reloads don't
   duplicate them. Note hl.plugin.load does nothing from `hyprctl eval`; use
   `hyprctl plugin load` for live experiments.
+- KNOWN ISSUE (2026-10-14): with title bars on, clicks inside Chrome's Google sign-in popup
+  (and its bar buttons) didn't register; turning the bars off fixed it. Suspect
+  bar_part_of_window = true. Marked experimental; left off on the user's machine.

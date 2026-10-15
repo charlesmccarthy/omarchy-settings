@@ -296,7 +296,7 @@ var pages = [
         title: "Title bars",
         items: [
           { key: "plugin.title_bars", type: "toggle", reload: true, label: "Title bars on floating windows",
-            description: "Mac-style close, minimize (to the scratchpad, Super + S) and maximize buttons. Needs hyprland-plugin-hyprbars",
+            description: "Experimental: Mac-style close, minimize (to the scratchpad) and maximize buttons. Can block clicks in some popups, e.g. Google sign-in. Needs hyprland-plugin-hyprbars",
             snippet: function(v) {
               if (!v) return ""
               // hyprbars runs actions as shell commands, so wrap each dispatcher.
