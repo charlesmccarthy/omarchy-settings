@@ -47,10 +47,21 @@ clock_format() {
 }
 
 clock_set() {
-  local twelve=$1 weekday=$2 time format
-  [[ $twelve == true ]] && time="h:mm AP" || time="HH:mm"
+  local twelve=$1 weekday=$2 seconds=$3 time format
+  [[ $twelve == true ]] && time="h:mm" || time="HH:mm"
+  [[ $seconds == true ]] && time+=":ss"
+  [[ $twelve == true ]] && time+=" AP"
   [[ $weekday == true ]] && format="dddd $time" || format="$time"
   omarchy bar set omarchy.clock format "$format" >/dev/null
+}
+
+# Current clock flags as "twelve weekday seconds" (true/false each).
+clock_flags() {
+  local f; f=$(clock_format)
+  printf '%s %s %s' \
+    "$([[ $f =~ AP|ap ]] && echo true || echo false)" \
+    "$([[ $f == *ddd* ]] && echo true || echo false)" \
+    "$([[ $f == *ss* ]] && echo true || echo false)"
 }
 
 # ---- shell.json idle block (the file replaces defaults wholesale, so keep
@@ -186,6 +197,7 @@ cmd_get() {
       "appearance.bar_position": $barpos,
       "time.twelve_hour": ($clock | test("AP|ap")),
       "time.weekday": ($clock | test("ddd")),
+      "time.seconds": ($clock | test("ss")),
       "time.timezone": $tz,
       "time.ntp": ($ntp == "yes"),
       "idle.screensaver": (($idle.screensaver // 150) / 60),
@@ -260,10 +272,15 @@ cmd_set() {
     appearance.background_pick) omarchy-theme-bg-switcher >/dev/null ;;
     appearance.terminal_font) terminal_font_set "$value" ;;
     appearance.bar_position) omarchy bar position "$value" >/dev/null ;;
-    time.twelve_hour)
-      clock_set "$value" "$(clock_format | grep -q ddd && echo true || echo false)" ;;
-    time.weekday)
-      clock_set "$(clock_format | grep -qE 'AP|ap' && echo true || echo false)" "$value" ;;
+    time.twelve_hour|time.weekday|time.seconds)
+      local twelve weekday seconds
+      read -r twelve weekday seconds <<<"$(clock_flags)"
+      case $key in
+        time.twelve_hour) twelve=$value ;;
+        time.weekday) weekday=$value ;;
+        time.seconds) seconds=$value ;;
+      esac
+      clock_set "$twelve" "$weekday" "$seconds" ;;
     time.timezone) timedatectl set-timezone "$value" ;;
     time.ntp) timedatectl set-ntp "$value" ;;
     idle.screensaver) idle_set screensaver "$(awk -v m="$value" 'BEGIN{printf "%d", m * 60 + 0.5}')" ;;

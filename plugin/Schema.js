@@ -330,7 +330,9 @@ var pages = [
           { key: "time.twelve_hour", backend: "cmd", type: "toggle", label: "12-hour time",
             description: "Show 8:30 PM instead of 20:30 in the bar" },
           { key: "time.weekday", backend: "cmd", type: "toggle", label: "Show weekday",
-            description: "Show the day name next to the time" }
+            description: "Show the day name next to the time" },
+          { key: "time.seconds", backend: "cmd", type: "toggle", label: "Show seconds",
+            description: "Tick the clock every second" }
         ]
       },
       {
