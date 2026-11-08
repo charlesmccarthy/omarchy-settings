@@ -268,75 +268,25 @@ var pages = [
       {
         title: "Layout",
         items: [
-          { key: "general.layout", type: "choice", label: "Default layout",
-            description: "Scrolling keeps windows wide and scrolls sideways; good on laptops. Super + L switches per workspace",
-            options: [{ value: "dwindle", label: "Tiling" }, { value: "scrolling", label: "Scrolling" }] },
+          { key: "windows.layout", backend: "cmd", type: "choice", label: "Default layout",
+            description: "Floating is a classic desktop: overlapping windows with title bars and a dock. Workspaces with windows keep theirs; Super + L switches one",
+            options: [{ value: "dwindle", label: "Tiling" }, { value: "scrolling", label: "Scrolling" },
+                      { value: "floating", label: "Floating" }] },
           { key: "scrolling.column_width", type: "slider", label: "Window width when scrolling",
             description: "Share of the screen each window takes in the scrolling layout",
             min: 0.3, max: 1, step: 0.05,
-            format: function(v) { return Math.round(v * 100) + "%" } },
-          { key: "rule.float_all", type: "toggle", reload: true, label: "Float new windows",
-            description: "Open windows floating, overlapping and opaque, like macOS. Works best with Focus set to On click. Super + T tiles one again",
-            snippet: function(v) {
-              if (!v) return ""
-              return [
-                'o.window(".*", { float = true, center = true })',
-                // Omarchy forces Chromium-based browsers to tile; let them float too.
-                'o.window({ tag = "chromium-based-browser" }, { tile = false, float = true })',
-                // Overlapping windows should be opaque, or the one behind shows
-                // through and looks like it's on top (Omarchy's default is ~96%).
-                'o.window(".*", { opacity = "1 1" })',
-                // Like macOS, bring a floating window to the front when it gets
-                // focus. Use the window the event reports (the active-window query
-                // can still return the previous one), and keep the subscription
-                // referenced, or Lua's GC can drop it.
-                'omarchy_settings_raise_on_focus = hl.on("window.active", function(w)',
-                '  w = w or hl.get_active_window()',
-                '  if w and w.floating then',
-                '    hl.dispatch(hl.dsp.window.bring_to_top({ window = "address:" .. w.address }))',
-                '  end',
-                'end)'
-              ].join("\n")
-            } }
+            format: function(v) { return Math.round(v * 100) + "%" } }
         ]
       },
       {
-        title: "Title bars",
+        title: "Dock",
         items: [
-          { key: "plugin.title_bars", type: "toggle", reload: true, label: "Title bars on floating windows",
-            description: "Experimental: Mac-style close, minimize (to the scratchpad) and maximize buttons. Can block clicks in some popups, e.g. Google sign-in. Needs hyprland-plugin-hyprbars",
-            snippet: function(v) {
-              if (!v) return ""
-              // hyprbars runs actions as shell commands, so wrap each dispatcher.
-              var dispatch = function(lua) { return "hyprctl dispatch '" + lua + "'" }
-              var button = function(bg, fg, lua) {
-                return '  hl.plugin.hyprbars.add_button({ bg_color = "' + bg + '", fg_color = "' + fg +
-                       '", size = 13, icon = "", action = ' + JSON.stringify(dispatch(lua)) + ' })'
-              }
-              return [
-                // Skip quietly when the plugin isn't installed or doesn't match
-                // this Hyprland version, rather than breaking the config.
-                'local hyprbars = "/usr/lib/libhyprbars.so"',
-                'local hyprbars_file = io.open(hyprbars)',
-                'if hyprbars_file then',
-                '  hyprbars_file:close()',
-                '  pcall(hl.plugin.load, hyprbars)',
-                'end',
-                'if hl.plugin.hyprbars then',
-                '  hl.config({ plugin = { hyprbars = {',
-                '    bar_height = 28, bar_text_size = 11, bar_text_font = "JetBrainsMono Nerd Font",',
-                '    bar_buttons_alignment = "left", bar_padding = 10, bar_button_padding = 8,',
-                '    bar_part_of_window = true, bar_precedence_over_border = true,',
-                '    on_double_click = ' + JSON.stringify(dispatch('hl.dsp.window.fullscreen({ mode = "maximized" })')) + ',',
-                '  } } })',
-                // Left to right like macOS: close, minimize, maximize.
-                button("rgb(ff5f57)", "rgb(7a1a14)", 'hl.dsp.window.close()'),
-                button("rgb(febc2e)", "rgb(8a5a00)", 'hl.dsp.window.move({ workspace = "special:scratchpad", follow = false })'),
-                button("rgb(28c840)", "rgb(0b5c1c)", 'hl.dsp.window.fullscreen({ mode = "maximized" })'),
-                '  o.window({ float = false }, { ["hyprbars:no_bar"] = true })',
-                'end'
-              ].join("\n")
-            } }
+          { key: "dock.position", backend: "cmd", type: "choice", label: "Dock position",
+            description: "Shown on floating workspaces",
+            options: [{ value: "bottom", label: "Bottom" }, { value: "left", label: "Left" },
+                      { value: "right", label: "Right" }] },
+          { key: "dock.autohide", backend: "cmd", type: "toggle", label: "Automatically hide the dock",
+            description: "Slides away until the pointer reaches its edge" }
         ]
       },
       {

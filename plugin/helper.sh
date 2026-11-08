@@ -169,6 +169,9 @@ cmd_get() {
     --arg agent "$(omarchy-default-agent 2>/dev/null)" \
     --arg dnd "$(omarchy-shell notifications isDnd 2>/dev/null)" \
     --arg switcher "$([[ -x $SWITCHER ]] && "$SWITCHER" status)" \
+    --arg layout "$(omarchy-hyprland-workspace-layout-default 2>/dev/null)" \
+    --arg dockpos "$(omarchy-dock position 2>/dev/null)" \
+    --arg dockhide "$(omarchy-dock autohide 2>/dev/null)" \
     '{
       "display.brightness": (if $brightness == "" then null else ($brightness | tonumber) end),
       "display.scale": ($monitor.scale // 1),
@@ -198,7 +201,10 @@ cmd_get() {
       "defaults.editor": $editor,
       "defaults.agent": $agent,
       "notifications.dnd": ($dnd == "on"),
-      "windows.switcher": ($switcher == "enabled")
+      "windows.switcher": ($switcher == "enabled"),
+      "windows.layout": $layout,
+      "dock.position": $dockpos,
+      "dock.autohide": ($dockhide == "on")
     }' | jq -s '.[0] * .[1]' - <(about_json)
 }
 
@@ -273,6 +279,9 @@ cmd_set() {
     defaults.editor) omarchy-default-editor "$value" >/dev/null ;;
     defaults.agent) omarchy-default-agent "$value" >/dev/null ;;
     notifications.dnd) omarchy-shell notifications setDnd "$value" >/dev/null ;;
+    windows.layout) omarchy-hyprland-workspace-layout-default "$value" >/dev/null ;;
+    dock.position) omarchy-dock position "$value" >/dev/null ;;
+    dock.autohide) [[ $value == true ]] && omarchy-dock autohide on >/dev/null || omarchy-dock autohide off >/dev/null ;;
     windows.switcher)
       if [[ ! -x $SWITCHER ]]; then
         echo "Install omarchy-switcher first: github.com/charlesmccarthy/omarchy-switcher" >&2

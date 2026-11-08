@@ -244,7 +244,9 @@ Item {
     // no longer declares, so they aren't written out as config options.
     var dropped = false
     Object.keys(parsed).forEach(function(k) {
-      if (/^(gesture|bind|rule)\./.test(k) && !Schema.findItem(k)) { delete parsed[k]; dropped = true }
+      if (/^(gesture|bind|rule|plugin)\./.test(k) && !Schema.findItem(k)) { delete parsed[k]; dropped = true }
+      // Omarchy 4.5 keeps the default layout itself; ours would override it.
+      if (k === "general.layout") { delete parsed[k]; dropped = true }
     })
     overrides = parsed
     // Rewrite the file so the dropped snippets stop loading.

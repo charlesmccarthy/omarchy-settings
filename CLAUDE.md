@@ -43,13 +43,9 @@ Goal: feel first-party — fast, smooth, themed, keyboard-friendly — and be pi
 - Touchpad gotcha: two-finger scrolling never triggers mouse_up/mouse_down key binds on
   this touchpad (Omarchy's own Super+scroll doesn't either). Use hl.gesture (pinch, or 3+
   finger swipes) for touchpad features instead.
-- Title bars: Windows → "Title bars on floating windows" snippet loads /usr/lib/libhyprbars.so
-  (AUR hyprland-plugin-hyprbars) with hl.plugin.load guarded by io.open + pcall, then configures
-  only `if hl.plugin.hyprbars` so a missing/mismatched plugin never breaks the config. Button
-  actions and on_double_click are SHELL commands (wrap dispatchers in `hyprctl dispatch '...'`). Buttons
-  are added left to right (close, minimize → special:scratchpad, maximize); reloads don't
-  duplicate them. Note hl.plugin.load does nothing from `hyprctl eval`; use
-  `hyprctl plugin load` for live experiments.
-- KNOWN ISSUE (2026-10-14): with title bars on, clicks inside Chrome's Google sign-in popup
-  (and its bar buttons) didn't register; turning the bars off fixed it. Suspect
-  bar_part_of_window = true. Marked experimental; left off on the user's machine.
+- Omarchy 4.5 (2026-11): built-in floating workspaces (title bars + dock) replaced our
+  "Float new windows" and hyprbars "Title bars" items (hyprbars pinned hyprland<0.57 and
+  blocked popup clicks). Windows → Default layout is now cmd-backed
+  (`omarchy-hyprland-workspace-layout-default`, dwindle|scrolling|floating), plus Dock
+  position/auto-hide via `omarchy dock`. Store.loadState drops stale plugin.* keys and
+  general.layout so old settings.lua state doesn't override 4.5's layouts.
